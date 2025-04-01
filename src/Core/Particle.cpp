@@ -18,7 +18,7 @@ auto Particle::theta(const Particle& other) const -> double {
     double product = p() * other.p();
     product = product == 0 ? 1 : (m_px * other.px() + m_py * other.py() + m_pz * other.pz()) / product;
     product = std::max(std::min(product, 1.0), -1.0);
-    return TMath::ACos(product);
+    return TMath::ACos(product) * 180. / TMath::Pi();
 }
 
 auto Particle::PxPyPzEVector() const -> ROOT::Math::PxPyPzEVector {

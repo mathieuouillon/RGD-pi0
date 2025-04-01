@@ -34,7 +34,6 @@ auto SetROOTOption() -> void {
 
     gErrorIgnoreLevel = kPrint;  // setting it to kPrint will print all messages again. kError, kFatal
 
-    // gStyle->SetOptStat(0);
     gStyle->SetOptFit(1111);
     gStyle->SetNumberContours(255);
     gStyle->SetImageScaling(3.);
@@ -44,7 +43,6 @@ auto SetROOTOption() -> void {
     gStyle->SetHistLineWidth(1);
     gStyle->SetFuncWidth(1);
     gStyle->SetGridWidth(1);
-    // gStyle->SetLineStyleString(1, "[12 12]");  // postscript dashes
 
     // put tick marks on top and RHS of plots
     gStyle->SetPadTickX(1);
@@ -66,7 +64,7 @@ int main(int argc, char* argv[]) {
     const toml::table config = toml::parse_file("../config/study1.toml");
 
     // Read the files
-    std::vector<std::string> files = Core::read_recursive_file_in_directory("../data/");
+    std::vector<std::string> files = Core::read_recursive_file_in_directory("/volatile/clas12/ouillon/skim_pass0v9_RGD/LD2/", 1);
     
     // Process the data
     study1::Histograms histograms;
@@ -75,7 +73,9 @@ int main(int argc, char* argv[]) {
 
     // Draw the histograms
     study1::Drawing drawing(histograms, config);
-    drawing.draw_electron_kinematics();
+    drawing.draw_electron();
+    // drawing.draw_photon();
+    drawing.draw_event();
 
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);

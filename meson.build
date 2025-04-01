@@ -1,5 +1,5 @@
 project(
-  'starter',
+  'analysis',
   'cpp',
   version: '0.1',
   default_options: [

@@ -161,6 +161,18 @@ inline auto compute_energy(double px, double py, double pz, int pid) -> double {
     return std::hypot(std::hypot(px, py, pz), mass);
 }
 
+inline auto get_mass(int pid) -> double {
+    switch (pid) {
+        case 11: return Core::Constantes::ElectronMass;
+        case 22: return 0.0;
+        case 211: case -211: return Core::Constantes::PionMass;
+        case 321: case -321: return Core::Constantes::KaonMass;
+        case 2212: case -2212: return Core::Constantes::ProtonMass;
+        case 2112: case -2112: return Core::Constantes::NeutronMass;
+        default: return std::numeric_limits<double>::quiet_NaN();
+    }
+}
+
 /**
  * @brief Computes the floating-point modulo operation.
  *
@@ -241,7 +253,7 @@ inline double warp_neg_pos_pi(double angle) {
  * @example
  * std::vector<int> numbers = {1, 2, 3};
  * auto pairs = generate_unique_pairs(numbers);
- * // pairs will contain: {(1, 2), (1, 3), (2, 3)}
+ * pairs will contain: {(1, 2), (1, 3), (2, 3)}
  */
 template <std::ranges::forward_range Range>
 requires std::copyable<std::ranges::range_value_t<Range>>

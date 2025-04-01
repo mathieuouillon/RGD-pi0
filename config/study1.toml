@@ -3,3 +3,16 @@ vz_min = -15
 vz_max = 5
 chi2_min = -3
 chi2_max = 3
+p_min = 0
+
+[photon]
+E_min = 0.6
+time_min = -1.57077
+time_max = 1.68663
+opening_angle_min = 8
+
+[event]
+Q2_min = 1
+W_min = 2
+zh_min = 0.3
+zh_max = 0.7

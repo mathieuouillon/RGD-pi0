@@ -79,6 +79,12 @@ struct CalorimeterBank {
         float lu = std::numeric_limits<float>::quiet_NaN();
         float lv = std::numeric_limits<float>::quiet_NaN();
         float lw = std::numeric_limits<float>::quiet_NaN();
+        float m2u = std::numeric_limits<float>::quiet_NaN();
+        float m2v = std::numeric_limits<float>::quiet_NaN();
+        float m2w = std::numeric_limits<float>::quiet_NaN();
+        float m3u = std::numeric_limits<float>::quiet_NaN();
+        float m3v = std::numeric_limits<float>::quiet_NaN();
+        float m3w = std::numeric_limits<float>::quiet_NaN();
     };
 
     CalorimeterStruct pcal;
@@ -131,6 +137,12 @@ inline auto read_Calorimeter_bank(const hipo::bank& REC_Calorimeter, const int p
         cal_struct.lu = REC_Calorimeter.get<float>("lu", i);
         cal_struct.lv = REC_Calorimeter.get<float>("lv", i);
         cal_struct.lw = REC_Calorimeter.get<float>("lw", i);
+        cal_struct.m2u = REC_Calorimeter.get<float>("m2u", i);
+        cal_struct.m2v = REC_Calorimeter.get<float>("m2v", i);
+        cal_struct.m2w = REC_Calorimeter.get<float>("m2w", i);
+        cal_struct.m3u = REC_Calorimeter.get<float>("m3u", i);
+        cal_struct.m3v = REC_Calorimeter.get<float>("m3v", i);
+        cal_struct.m3w = REC_Calorimeter.get<float>("m3w", i);
     };
 
     // Layer numbers to their respective calorimeter types for clarity:
