@@ -129,6 +129,7 @@ auto Drawing::draw_event() -> void {
     const double W_min = m_config["event"]["W_min"].value_or(NaN);
     const double zh_min = m_config["event"]["zh_min"].value_or(NaN);
     const double zh_max = m_config["event"]["zh_max"].value_or(NaN);
+    const double y_max = m_config["event"]["y_max"].value_or(NaN);
     //---------------------------------------------------------------------------------------------
 
     // Merge 1D histograms ------------------------------------------------------------------------
@@ -136,131 +137,34 @@ auto Drawing::draw_event() -> void {
     const std::shared_ptr<TH1D> hist1D_Q2 = m_histograms.event.hist1D_Q2->Merge();
     const std::shared_ptr<TH1D> hist1D_nu = m_histograms.event.hist1D_nu->Merge();
     const std::shared_ptr<TH1D> hist1D_zh = m_histograms.event.hist1D_zh->Merge();
+    const std::shared_ptr<TH1D> hist1D_y = m_histograms.event.hist1D_y->Merge();
     const std::shared_ptr<TH1D> hist1D_invariant_mass = m_histograms.event.hist1D_invariant_mass->Merge();
 
     const std::shared_ptr<TH1D> hist1D_W_cut = m_histograms.event.hist1D_W_cut->Merge();
     const std::shared_ptr<TH1D> hist1D_Q2_cut = m_histograms.event.hist1D_Q2_cut->Merge();
     const std::shared_ptr<TH1D> hist1D_nu_cut = m_histograms.event.hist1D_nu_cut->Merge();
     const std::shared_ptr<TH1D> hist1D_zh_cut = m_histograms.event.hist1D_zh_cut->Merge();
+    const std::shared_ptr<TH1D> hist1D_y_cut = m_histograms.event.hist1D_y_cut->Merge();
     const std::shared_ptr<TH1D> hist1D_invariant_mass_cut = m_histograms.event.hist1D_invariant_mass_cut->Merge();
+
+    const std::shared_ptr<TH1D> hist1D_invariant_mass_mix_cut = m_histograms.event_mix.hist1D_invariant_mass_cut->Merge();
     // --------------------------------------------------------------------------------------------
 
     Plotting::draw_hist1D(hist1D_W, hist1D_W_cut, m_path_event, {.cuts = {W_min}, .label = "W [GeV]"});
     Plotting::draw_hist1D(hist1D_Q2, hist1D_Q2_cut, m_path_event, {.cuts = {Q2_min}, .label = "Q2 [GeV^2]"});
     Plotting::draw_hist1D(hist1D_nu, hist1D_nu_cut, m_path_event, {.label = "#nu [GeV]"});
     Plotting::draw_hist1D(hist1D_zh, hist1D_zh_cut, m_path_event, {.cuts = {zh_min, zh_max}, .label = "zh"});
+    Plotting::draw_hist1D(hist1D_y, hist1D_y_cut, m_path_event, {.cuts = {y_max}, .label = "y"});
     Plotting::draw_hist1D(hist1D_invariant_mass, hist1D_invariant_mass_cut, m_path_event, {.label = "Invariant mass [GeV]"});
-
-    // Merge 2D histograms ------------------------------------------------------------------------
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_Q2_cut = m_histograms.event.hist2D_invariant_mass_cut_vs_Q2_cut->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_zh_cut = m_histograms.event.hist2D_invariant_mass_cut_vs_zh_cut->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_nu_cut = m_histograms.event.hist2D_invariant_mass_cut_vs_nu_cut->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_W_cut = m_histograms.event.hist2D_invariant_mass_cut_vs_W_cut->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_y = m_histograms.event.hist2D_invariant_mass_cut_vs_y->Merge();
-
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_opening_angle_least = m_histograms.event.hist2D_invariant_mass_cut_vs_opening_angle_least->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_opening_angle_high = m_histograms.event.hist2D_invariant_mass_cut_vs_opening_angle_high->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_E_least = m_histograms.event.hist2D_invariant_mass_cut_vs_E_least->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_E_high = m_histograms.event.hist2D_invariant_mass_cut_vs_E_high->Merge();
-
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_p_e = m_histograms.event.hist2D_invariant_mass_cut_vs_p_e->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_theta_e = m_histograms.event.hist2D_invariant_mass_cut_vs_theta_e->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_phi_e = m_histograms.event.hist2D_invariant_mass_cut_vs_phi_e->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_chi2_e = m_histograms.event.hist2D_invariant_mass_cut_vs_chi2_e->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_vz_e = m_histograms.event.hist2D_invariant_mass_cut_vs_vz_e->Merge();
-
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_beta_g_least = m_histograms.event.hist2D_invariant_mass_cut_vs_beta_g_least->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_beta_g_high = m_histograms.event.hist2D_invariant_mass_cut_vs_beta_g_high->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_time_g_least = m_histograms.event.hist2D_invariant_mass_cut_vs_time_g_least->Merge();
-    const std::shared_ptr<TH2D> hist2D_invariant_mass_cut_vs_time_g_high = m_histograms.event.hist2D_invariant_mass_cut_vs_time_g_high->Merge();
-    // --------------------------------------------------------------------------------------------
-
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_Q2_cut, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "Q2 [GeV^2]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_zh_cut, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "zh"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_nu_cut, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#nu [GeV]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_W_cut, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "W [GeV]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_y, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "y"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_opening_angle_least, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#theta_{e,#gamma} [deg.]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_opening_angle_high, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#theta_{e,#gamma} [deg.]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_E_least, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "E_{#gamma} [GeV]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_E_high, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "E_{#gamma} [GeV]"});
-
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_p_e, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "p_{e} [GeV/c]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_theta_e, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#theta_{e} [deg.]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_phi_e, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#phi_{e} [deg.]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_chi2_e, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "chi2pid_{e}"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_vz_e, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "Vz_{e} [cm]"});
-
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_beta_g_least, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#beta_{#gamma}"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_beta_g_high, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#beta_{#gamma}"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_time_g_least, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#Deltat [ns]"});
-    Plotting::draw_hist2D(hist2D_invariant_mass_cut_vs_time_g_high, m_path_event, {.label_x = "Invariant mass [GeV]", .label_y = "#Deltat [ns]"});
-
-
-    // Draw the photon information
-    draw_photon_info(m_histograms.event.photon_info, m_path_photon_info);
-    draw_photon_info(m_histograms.event.photon_info_off, m_path_photon_info_off);
-
-
+    
+    
+    
+    double sidebandData = hist1D_invariant_mass_cut->Integral(hist1D_invariant_mass_cut->FindBin(0.19), hist1D_invariant_mass_cut->FindBin(0.3));
+    double sidebandMixed = hist1D_invariant_mass_mix_cut->Integral(hist1D_invariant_mass_mix_cut->FindBin(0.19), hist1D_invariant_mass_mix_cut->FindBin(0.3));
+    double scaleFactor = sidebandData / sidebandMixed;
+    fmt::println("scale: {}", scaleFactor);
+    
+    Plotting::draw_hist1D(hist1D_invariant_mass_cut, hist1D_invariant_mass_mix_cut, m_path_event, {.file_name = "invariant_mass_mix", .scale2 = scaleFactor, .label = "Invariant mass [GeV]"});
 }
 
-
-auto Drawing::draw_photon_info(const PhotonInfo& info, const std::string& path) -> void {
-
-    // Photon information
-    const std::shared_ptr<TH1D> hist1D_E_least = info.hist1D_E_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_E_high = info.hist1D_E_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_beta_least = info.hist1D_beta_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_beta_high = info.hist1D_beta_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_time_least = info.hist1D_time_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_time_high = info.hist1D_time_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Epcal_high = info.hist1D_Epcal_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Epcal_least = info.hist1D_Epcal_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_in_high = info.hist1D_Ecalo_in_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_in_least = info.hist1D_Ecalo_in_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_out_high = info.hist1D_Ecalo_out_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_out_least = info.hist1D_Ecalo_out_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m2u_high = info.hist1D_Ecalo_m2u_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m2u_least = info.hist1D_Ecalo_m2u_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m2v_high = info.hist1D_Ecalo_m2v_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m2v_least = info.hist1D_Ecalo_m2v_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m2w_high = info.hist1D_Ecalo_m2w_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m2w_least = info.hist1D_Ecalo_m2w_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m3u_high = info.hist1D_Ecalo_m3u_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m3u_least = info.hist1D_Ecalo_m3u_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m3v_high = info.hist1D_Ecalo_m3v_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m3v_least = info.hist1D_Ecalo_m3v_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m3w_high = info.hist1D_Ecalo_m3w_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_m3w_least = info.hist1D_Ecalo_m3w_least->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_tot_high = info.hist1D_Ecalo_tot_high->Merge();
-    const std::shared_ptr<TH1D> hist1D_Ecalo_tot_least = info.hist1D_Ecalo_tot_least->Merge();
-
-    Plotting::draw_hist1D(hist1D_E_least, path, {.label = "E_{#gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_E_high, path, {.label = "E_{#gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_beta_least, path, {.label = "#beta_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_beta_high, path, {.label = "#beta_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_time_least, path, {.label = "#Deltat [ns]"});
-    Plotting::draw_hist1D(hist1D_time_high, path, {.label = "#Deltat [ns]"});
-    Plotting::draw_hist1D(hist1D_Epcal_least, path, {.label = "E_{PCAL, #gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_Epcal_high, path, {.label = "E_{PCAL, #gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_Ecalo_in_least, path, {.label = "E_{IN, #gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_Ecalo_in_high, path, {.label = "E_{IN, #gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_Ecalo_out_least, path, {.label = "E_{OUT, #gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_Ecalo_out_high, path, {.label = "E_{OUT, #gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m2u_least, path, {.label = "m2u_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m2u_high, path, {.label = "m2u_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m2v_least, path, {.label = "m2v_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m2v_high, path, {.label = "m2v_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m2w_least, path, {.label = "m2w_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m2w_high, path, {.label = "m2w_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m3u_least, path, {.label = "m3u_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m3u_high, path, {.label = "m3u_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m3v_least, path, {.label = "m3v_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m3v_high, path, {.label = "m3v_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m3w_least, path, {.label = "m3w_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_m3w_high, path, {.label = "m3w_{#gamma}"});
-    Plotting::draw_hist1D(hist1D_Ecalo_tot_least, path, {.label = "E_{CAL,tot, #gamma} [GeV]"});
-    Plotting::draw_hist1D(hist1D_Ecalo_tot_high, path, {.label = "E_{CAL,tot, #gamma} [GeV]"});
-
-}
 }  // namespace study1

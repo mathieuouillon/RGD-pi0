@@ -10,9 +10,28 @@ Reader::~Reader() = default;
 
 auto Reader::operator()(const std::string& file) const -> void {
 
+    bool mode_write = false;
+
     auto dict = hipo::dictionary();
     auto reader = hipo::reader(file, dict);
     auto hipo_event = hipo::event();
+
+    auto writer = hipo::writer();
+    auto dict_writer = hipo::dictionary();
+    reader.readDictionary(dict_writer);
+
+    for (const std::string& s : dict_writer.getSchemaList())
+        writer.getDictionary().addSchema(dict_writer.getSchema(s.c_str()));
+
+    hipo::schema schemaPart("ANAL::Particle", 100, 1);
+    schemaPart.parse("pid/S,px/F,py/F,pz/F");
+    writer.getDictionary().addSchema(schemaPart);
+
+    int pos = file.find("skim_run_");
+    std::vector<std::string> dst_schema = {"RUN::config", "REC::Event", "REC::Particle", "REC::Calorimeter",
+                                           "REC::ForwardTagger", "REC::Scintillator", "REC::Track", "REC::CovMat",
+                                           "REC::Traj", "REC::Cherenkov", "RUN::config", "RUN::rf"};
+    if (mode_write) writer.open(std::string("../data/photon_" + file.substr(pos + 5)).c_str());
 
     auto REC_Event = hipo::bank(dict.getSchema("REC::Event"));
     auto RUN_config = hipo::bank(dict.getSchema("RUN::config"));
@@ -24,44 +43,6 @@ auto Reader::operator()(const std::string& file) const -> void {
         if (REC_Particle.getRows() == 0) continue;
 
         double start_time = REC_Event.getFloat("startTime", 0);
-        // ---------------------------
-        //     Stuff for GBTFilter
-        // ---------------------------
-        int run_number = RUN_config.getInt("run", 0);
-        std::vector<int> good_photon_rows;
-        // Get CaloMap for the event
-        auto calo_map = GetCaloMap(REC_Calorimeter);
-        for (int i = 0; i < REC_Particle.getRows(); i++) {
-            int pid = REC_Particle.getInt("pid", i);
-            if (pid == 22) {
-                if (Filter(REC_Particle, REC_Calorimeter, calo_map, i, run_number)) {
-                    good_photon_rows.push_back(i);
-                }
-            }
-        }
-
-        if (good_photon_rows.size() < 2) continue;
-        // Get good photons
-        std::vector<Core::Particle> good_photons;   
-        for (const auto& row : good_photon_rows) {
-            int pid = REC_Particle.getInt("pid", row);
-            int status = REC_Particle.getInt("status", row);
-            int charge = REC_Particle.getInt("charge", row);
-
-            double px = REC_Particle.getDouble("px", row);
-            double py = REC_Particle.getDouble("py", row);
-            double pz = REC_Particle.getDouble("pz", row);
-            double vx = REC_Particle.getDouble("vx", row);
-            double vy = REC_Particle.getDouble("vy", row);
-            double vz = REC_Particle.getDouble("vz", row);
-            double vt = REC_Particle.getDouble("vt", row);
-            double beta = REC_Particle.getDouble("beta", row);
-            double chi2pid = REC_Particle.getDouble("chi2pid", row);
-            double E = Core::compute_energy(px, py, pz, pid);
-
-            good_photons.emplace_back(pid, status, row, charge, 0, px, py, pz, E, vx, vy, vz, vt, beta, chi2pid);
-        }
-        // End ---------------------------------------
 
         Topology topology = get_topology(REC_Particle);
 
@@ -72,31 +53,72 @@ auto Reader::operator()(const std::string& file) const -> void {
         bool pass_electron_cuts = select_electron(electron, REC_Calorimeter, REC_Cherenkov);
         if (!pass_electron_cuts) continue;
 
-        // std::vector<Core::Particle> selected_photons = select_photons(topology.photons, electron, REC_Calorimeter, start_time);
+        // Select photons using AI
+        std::vector<Core::Particle> good_photons = select_photons_with_AI(RUN_config, REC_Particle, REC_Calorimeter);
+        if (good_photons.size() < 2) continue;
 
-        // if (selected_photons.empty()) continue;
+        // std::vector<Core::Particle> good_photons = select_photons(topology.photons, electron, REC_Calorimeter, start_time);
+
+        for (Core::Particle& photon : good_photons) {
+            Core::CalorimeterBank calo_info = Core::read_Calorimeter_bank(REC_Calorimeter, photon.index());
+            double time = calo_info.pcal.time - start_time - calo_info.pcal.path / 30;
+
+            double opening_angle = electron.theta(photon);
+
+            m_histograms.photon.hist1D_E->Get()->Fill(photon.E());
+            m_histograms.photon.hist1D_beta->Get()->Fill(photon.beta());
+            m_histograms.photon.hist1D_time->Get()->Fill(time);
+            m_histograms.photon.hist1D_vz->Get()->Fill(photon.vz());
+            m_histograms.photon.hist1D_opening_angle->Get()->Fill(opening_angle);
+            m_histograms.photon.hist1D_delta_vz->Get()->Fill(electron.vz() - photon.vz());
+
+            m_histograms.photon.hist2D_phi_vs_theta->Get()->Fill(photon.phi(), photon.theta());
+            m_histograms.photon.hist2D_E_vs_vz->Get()->Fill(photon.E(), photon.vz());
+
+            m_histograms.photon.hist1D_time_cut->Get()->Fill(time);
+            m_histograms.photon.hist1D_E_cut->Get()->Fill(photon.E());
+            m_histograms.photon.hist1D_opening_angle_cut->Get()->Fill(opening_angle);
+
+            m_histograms.photon.hist1D_vz_cut->Get()->Fill(photon.vz());
+            m_histograms.photon.hist1D_beta_cut->Get()->Fill(photon.beta());
+
+            m_histograms.photon.hist2D_phi_vs_theta_cut->Get()->Fill(photon.phi(), photon.theta());
+            m_histograms.photon.hist2D_E_vs_vz_cut->Get()->Fill(photon.E(), photon.vz());
+
+            m_histograms.photon.hist1D_delta_vz_cut->Get()->Fill(electron.vz() - photon.vz());
+        }
+
+        // Get the photon from another event
+        std::vector<Core::Particle> photon_mix_queue;
+        int count = 0;
+        while (photon_mix_queue.size() < number_of_events && reader.eventNumber() + number_of_events < reader.getEntries() - number_of_events) {
+            reader.next(hipo_event, REC_Event, RUN_config, REC_Particle, REC_Calorimeter, REC_Cherenkov);
+            Topology topology_mix = get_topology(REC_Particle);
+
+            std::vector<Core::Particle> good_photons_mix = select_photons_with_AI(RUN_config, REC_Particle, REC_Calorimeter);
+            if (good_photons_mix.size() < 2) continue;
+
+            for (Core::Particle& photon : good_photons_mix) {
+                photon_mix_queue.push_back(photon);
+            }
+            count++;
+        }
+
+        for (size_t i = 0; i < count; i++) {
+            reader.previous(hipo_event, REC_Event, RUN_config, REC_Particle, REC_Calorimeter, REC_Cherenkov);
+        }
 
         std::vector<std::pair<Core::Particle, Core::Particle>> pair_photon = Core::generate_unique_pairs(good_photons);
 
+        std::set<Core::Particle> set_photons_pass_event_cuts;
         for (const auto& [photon1, photon2] : pair_photon) {
             // Cuts ---------------------------------------------------------------------------------------
             const double Q2_min = m_config["event"]["Q2_min"].value_or(NaN);
             const double W_min = m_config["event"]["W_min"].value_or(NaN);
             const double zh_min = m_config["event"]["zh_min"].value_or(NaN);
             const double zh_max = m_config["event"]["zh_max"].value_or(NaN);
+            const double y_max = m_config["event"]["y_max"].value_or(NaN);
             //---------------------------------------------------------------------------------------------
-
-            // Find the least energy photon
-            Core::Particle photon_least_energy = photon1;
-            if (photon2.E() < photon1.E()) {
-                photon_least_energy = photon2;
-            }
-
-            // Find the most energetic photon
-            Core::Particle photon_high_energy = photon1;
-            if (photon2.E() > photon1.E()) {
-                photon_high_energy = photon2;
-            }
 
             ROOT::Math::PxPyPzEVector k1 = {0, 0, 10.53, 10.53};
             ROOT::Math::PxPyPzEVector q1 = k1 - electron.PxPyPzEVector();
@@ -113,113 +135,147 @@ auto Reader::operator()(const std::string& file) const -> void {
             double pT = h.Pt();
             double m = ROOT::Math::VectorUtil::InvariantMass(photon1.PxPyPzEVector(), photon2.PxPyPzEVector());
 
-            double opening_angle_electron_least = electron.theta(photon_least_energy);
-            double opening_angle_electron_high = electron.theta(photon_high_energy);
-            Core::CalorimeterBank calo_info_least = Core::read_Calorimeter_bank(REC_Calorimeter, photon_least_energy.index());
-            double time_least = calo_info_least.pcal.time - start_time - calo_info_least.pcal.path / 30;
-            Core::CalorimeterBank calo_info_high = Core::read_Calorimeter_bank(REC_Calorimeter, photon_high_energy.index());
-            double time_high = calo_info_high.pcal.time - start_time - calo_info_high.pcal.path / 30;
+            Core::CalorimeterBank calo_info_1 = Core::read_Calorimeter_bank(REC_Calorimeter, photon1.index());
+            int sector_1 = calo_info_1.pcal.sector;  
+            Core::CalorimeterBank calo_info_2 = Core::read_Calorimeter_bank(REC_Calorimeter, photon2.index());
+            int sector_2 = calo_info_2.pcal.sector;  
 
             m_histograms.event.hist1D_W->Get()->Fill(W);
             m_histograms.event.hist1D_Q2->Get()->Fill(Q2);
             m_histograms.event.hist1D_nu->Get()->Fill(nu);
             m_histograms.event.hist1D_zh->Get()->Fill(zh);
+            m_histograms.event.hist1D_y->Get()->Fill(y);
             m_histograms.event.hist1D_invariant_mass->Get()->Fill(m);
 
             const bool cut_Q2 = Q2 > Q2_min;
             const bool cut_W = W > W_min;
             const bool cut_zh = zh_min < zh && zh < zh_max;
-            const bool cuts = cut_Q2 && cut_W && cut_zh;
+            const bool cut_y = y < y_max;
+            const bool cut_sector = sector_1 != sector_2;
+            const bool cuts = cut_Q2 && cut_W && cut_zh && cut_y;
 
-            if (cut_Q2 && cut_W) m_histograms.event.hist1D_zh_cut->Get()->Fill(zh);
-            if (cut_Q2 && cut_zh) m_histograms.event.hist1D_W_cut->Get()->Fill(W);
-            if (cut_W && cut_zh) m_histograms.event.hist1D_Q2_cut->Get()->Fill(Q2);
+            if (cut_Q2 && cut_W && cut_y) m_histograms.event.hist1D_zh_cut->Get()->Fill(zh);
+            if (cut_Q2 && cut_zh && cut_y) m_histograms.event.hist1D_W_cut->Get()->Fill(W);
+            if (cut_W && cut_zh && cut_y) m_histograms.event.hist1D_Q2_cut->Get()->Fill(Q2);
+            if (cut_Q2 && cut_W && cut_zh) m_histograms.event.hist1D_y_cut->Get()->Fill(nu);
 
             if (cuts) {
                 m_histograms.event.hist1D_nu_cut->Get()->Fill(nu);
                 m_histograms.event.hist1D_invariant_mass_cut->Get()->Fill(m);
 
-                m_histograms.event.hist2D_invariant_mass_cut_vs_Q2_cut->Get()->Fill(m, Q2);
-                m_histograms.event.hist2D_invariant_mass_cut_vs_zh_cut->Get()->Fill(m, zh);
-                m_histograms.event.hist2D_invariant_mass_cut_vs_nu_cut->Get()->Fill(m, nu);
-                m_histograms.event.hist2D_invariant_mass_cut_vs_W_cut->Get()->Fill(m, W);
-                m_histograms.event.hist2D_invariant_mass_cut_vs_y->Get()->Fill(m, y);
-
-                m_histograms.event.hist2D_invariant_mass_cut_vs_opening_angle_least->Get()->Fill(m, opening_angle_electron_least);
-                m_histograms.event.hist2D_invariant_mass_cut_vs_opening_angle_high->Get()->Fill(m, opening_angle_electron_high);
-                m_histograms.event.hist2D_invariant_mass_cut_vs_E_least->Get()->Fill(m, calo_info_least.pcal.energy);
-                m_histograms.event.hist2D_invariant_mass_cut_vs_E_high->Get()->Fill(m, calo_info_high.pcal.energy);
-
-                m_histograms.event.hist2D_invariant_mass_cut_vs_p_e->Get()->Fill(m, electron.p());
-                m_histograms.event.hist2D_invariant_mass_cut_vs_theta_e->Get()->Fill(m, electron.theta());
-                m_histograms.event.hist2D_invariant_mass_cut_vs_phi_e->Get()->Fill(m, electron.phi());
-                m_histograms.event.hist2D_invariant_mass_cut_vs_chi2_e->Get()->Fill(m, electron.chi2pid());
-                m_histograms.event.hist2D_invariant_mass_cut_vs_vz_e->Get()->Fill(m, electron.vz());
-
-                m_histograms.event.hist2D_invariant_mass_cut_vs_beta_g_least->Get()->Fill(m, photon_least_energy.beta());
-                m_histograms.event.hist2D_invariant_mass_cut_vs_beta_g_high->Get()->Fill(m, photon_high_energy.beta());
-                m_histograms.event.hist2D_invariant_mass_cut_vs_time_g_least->Get()->Fill(m, time_least);
-                m_histograms.event.hist2D_invariant_mass_cut_vs_time_g_high->Get()->Fill(m, time_high);
-
-                if (0.1 < m && m < 0.18) {
-                    m_histograms.event.photon_info.hist1D_E_high->Get()->Fill(photon_high_energy.E());
-                    m_histograms.event.photon_info.hist1D_E_least->Get()->Fill(photon_least_energy.E());
-                    m_histograms.event.photon_info.hist1D_beta_high->Get()->Fill(photon_high_energy.beta());
-                    m_histograms.event.photon_info.hist1D_beta_least->Get()->Fill(photon_least_energy.beta());
-                    m_histograms.event.photon_info.hist1D_time_high->Get()->Fill(time_high);
-                    m_histograms.event.photon_info.hist1D_time_least->Get()->Fill(time_least);
-                    m_histograms.event.photon_info.hist1D_Epcal_high->Get()->Fill(calo_info_high.pcal.energy);
-                    m_histograms.event.photon_info.hist1D_Epcal_least->Get()->Fill(calo_info_least.pcal.energy);
-                    m_histograms.event.photon_info.hist1D_Ecalo_in_high->Get()->Fill(calo_info_high.inner.energy);
-                    m_histograms.event.photon_info.hist1D_Ecalo_in_least->Get()->Fill(calo_info_least.inner.energy);
-                    m_histograms.event.photon_info.hist1D_Ecalo_out_high->Get()->Fill(calo_info_high.outer.energy);
-                    m_histograms.event.photon_info.hist1D_Ecalo_out_least->Get()->Fill(calo_info_least.outer.energy);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m2u_high->Get()->Fill(calo_info_high.pcal.m2u);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m2u_least->Get()->Fill(calo_info_least.pcal.m2u);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m2v_high->Get()->Fill(calo_info_high.pcal.m2v);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m2v_least->Get()->Fill(calo_info_least.pcal.m2v);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m2w_high->Get()->Fill(calo_info_high.pcal.m2w);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m2w_least->Get()->Fill(calo_info_least.pcal.m2w);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m3u_high->Get()->Fill(calo_info_high.pcal.m3u);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m3u_least->Get()->Fill(calo_info_least.pcal.m3u);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m3v_high->Get()->Fill(calo_info_high.pcal.m3v);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m3v_least->Get()->Fill(calo_info_least.pcal.m3v);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m3w_high->Get()->Fill(calo_info_high.pcal.m3w);
-                    m_histograms.event.photon_info.hist1D_Ecalo_m3w_least->Get()->Fill(calo_info_least.pcal.m3w);
-                    m_histograms.event.photon_info.hist1D_Ecalo_tot_high->Get()->Fill(calo_info_high.pcal.energy + calo_info_high.inner.energy + calo_info_high.outer.energy);
-                    m_histograms.event.photon_info.hist1D_Ecalo_tot_least->Get()->Fill(calo_info_least.pcal.energy + calo_info_least.inner.energy + calo_info_least.outer.energy);
-                }
-
-                if (0 < m && m < 0.08) {
-                    m_histograms.event.photon_info_off.hist1D_E_high->Get()->Fill(photon_high_energy.E());
-                    m_histograms.event.photon_info_off.hist1D_E_least->Get()->Fill(photon_least_energy.E());
-                    m_histograms.event.photon_info_off.hist1D_beta_high->Get()->Fill(photon_high_energy.beta());
-                    m_histograms.event.photon_info_off.hist1D_beta_least->Get()->Fill(photon_least_energy.beta());
-                    m_histograms.event.photon_info_off.hist1D_time_high->Get()->Fill(time_high);
-                    m_histograms.event.photon_info_off.hist1D_time_least->Get()->Fill(time_least);
-                    m_histograms.event.photon_info_off.hist1D_Epcal_high->Get()->Fill(calo_info_high.pcal.energy);
-                    m_histograms.event.photon_info_off.hist1D_Epcal_least->Get()->Fill(calo_info_least.pcal.energy);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_in_high->Get()->Fill(calo_info_high.inner.energy);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_in_least->Get()->Fill(calo_info_least.inner.energy);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_out_high->Get()->Fill(calo_info_high.outer.energy);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_out_least->Get()->Fill(calo_info_least.outer.energy);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m2u_high->Get()->Fill(calo_info_high.pcal.m2u);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m2u_least->Get()->Fill(calo_info_least.pcal.m2u);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m2v_high->Get()->Fill(calo_info_high.pcal.m2v);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m2v_least->Get()->Fill(calo_info_least.pcal.m2v);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m2w_high->Get()->Fill(calo_info_high.pcal.m2w);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m2w_least->Get()->Fill(calo_info_least.pcal.m2w);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m3u_high->Get()->Fill(calo_info_high.pcal.m3u);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m3u_least->Get()->Fill(calo_info_least.pcal.m3u);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m3v_high->Get()->Fill(calo_info_high.pcal.m3v);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m3v_least->Get()->Fill(calo_info_least.pcal.m3v);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m3w_high->Get()->Fill(calo_info_high.pcal.m3w);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_m3w_least->Get()->Fill(calo_info_least.pcal.m3w);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_tot_high->Get()->Fill(calo_info_high.pcal.energy + calo_info_high.inner.energy + calo_info_high.outer.energy);
-                    m_histograms.event.photon_info_off.hist1D_Ecalo_tot_least->Get()->Fill(calo_info_least.pcal.energy + calo_info_least.inner.energy + calo_info_least.outer.energy);
-                }
+                set_photons_pass_event_cuts.insert(photon1);
+                set_photons_pass_event_cuts.insert(photon2);
             }
         }
+
+        // Generate pair of photons between good_photon and photon_mix_queue
+        std::vector<std::pair<Core::Particle, Core::Particle>> pair_photon_mix;
+        for (Core::Particle& p : good_photons) {
+            for (Core::Particle& q : photon_mix_queue) {
+                std::pair<Core::Particle, Core::Particle> pair = {p, q};
+                pair_photon_mix.push_back(pair);
+            }
+        }
+
+        for (const auto& [photon1, photon2] : pair_photon_mix) {
+            // Cuts ---------------------------------------------------------------------------------------
+            const double Q2_min = m_config["event"]["Q2_min"].value_or(NaN);
+            const double W_min = m_config["event"]["W_min"].value_or(NaN);
+            const double zh_min = m_config["event"]["zh_min"].value_or(NaN);
+            const double zh_max = m_config["event"]["zh_max"].value_or(NaN);
+            const double y_max = m_config["event"]["y_max"].value_or(NaN);
+            //---------------------------------------------------------------------------------------------
+
+            ROOT::Math::PxPyPzEVector k1 = {0, 0, 10.53, 10.53};
+            ROOT::Math::PxPyPzEVector q1 = k1 - electron.PxPyPzEVector();
+            ROOT::Math::PxPyPzEVector p1 = {0, 0, 0, Core::Constantes::ProtonMass};
+            ROOT::Math::PxPyPzEVector h = photon1.PxPyPzEVector() + photon2.PxPyPzEVector();
+
+            double M = Core::Constantes::ProtonMass;
+            double nu = k1.E() - electron.PxPyPzEVector().E();
+            double y = nu / k1.E();
+            double Q2 = 2. * q1.E() * electron.E() * (1 - std::cos(electron.PxPyPzEVector().Theta()));
+            double W = std::sqrt(M * M + 2 * M * nu - Q2);
+            double zh = h.E() / nu;
+            double xB = Q2 / (2. * M * nu);
+            double pT = h.Pt();
+            double m = ROOT::Math::VectorUtil::InvariantMass(photon1.PxPyPzEVector(), photon2.PxPyPzEVector());
+
+            Core::CalorimeterBank calo_info_1 = Core::read_Calorimeter_bank(REC_Calorimeter, photon1.index());
+            int sector_1 = calo_info_1.pcal.sector;  
+            Core::CalorimeterBank calo_info_2 = Core::read_Calorimeter_bank(REC_Calorimeter, photon2.index());
+            int sector_2 = calo_info_2.pcal.sector; 
+
+            m_histograms.event_mix.hist1D_W->Get()->Fill(W);
+            m_histograms.event_mix.hist1D_Q2->Get()->Fill(Q2);
+            m_histograms.event_mix.hist1D_nu->Get()->Fill(nu);
+            m_histograms.event_mix.hist1D_zh->Get()->Fill(zh);
+            m_histograms.event_mix.hist1D_y->Get()->Fill(y);
+            m_histograms.event_mix.hist1D_invariant_mass->Get()->Fill(m);
+
+            const bool cut_Q2 = Q2 > Q2_min;
+            const bool cut_W = W > W_min;
+            const bool cut_zh = zh_min < zh && zh < zh_max;
+            const bool cut_y = y < y_max;
+            const bool cut_sector = sector_1 != sector_2;
+            const bool cuts = cut_Q2 && cut_W && cut_zh && cut_y;
+
+            if (cut_Q2 && cut_W && cut_y) m_histograms.event_mix.hist1D_zh_cut->Get()->Fill(zh);
+            if (cut_Q2 && cut_zh && cut_y) m_histograms.event_mix.hist1D_W_cut->Get()->Fill(W);
+            if (cut_W && cut_zh && cut_y) m_histograms.event_mix.hist1D_Q2_cut->Get()->Fill(Q2);
+            if (cut_Q2 && cut_W && cut_zh) m_histograms.event_mix.hist1D_y_cut->Get()->Fill(nu);
+
+            if (cuts) {
+                m_histograms.event_mix.hist1D_nu_cut->Get()->Fill(nu);
+                m_histograms.event_mix.hist1D_invariant_mass_cut->Get()->Fill(m);
+
+                set_photons_pass_event_cuts.insert(photon1);
+                set_photons_pass_event_cuts.insert(photon2);
+            }
+        }
+
+        // Loop over the pairs of photons
+
+        if (mode_write) {
+            hipo::bank partBank(schemaPart, 1 + set_photons_pass_event_cuts.size());
+
+            if (!(set_photons_pass_event_cuts.empty())) {
+                // Write events with good photons and electron
+                hipo::event outEvent = hipo_event;
+                outEvent.reset();
+
+                for (const std::string& s : dst_schema) {
+                    auto bank = hipo::bank(dict.getSchema(s.c_str()));
+                    hipo_event.getStructure(bank);
+                    if (bank.getRows() > 0) {
+                        outEvent.addStructure(bank);
+                    }
+                }
+
+                partBank.putInt("pid", 0, 11);
+                partBank.putFloat("px", 0, electron.px());
+                partBank.putFloat("py", 0, electron.py());
+                partBank.putFloat("pz", 0, electron.pz());
+
+                for (int j = 1; const auto& photon : set_photons_pass_event_cuts) {
+                    partBank.putInt("pid", j, 22);
+                    partBank.putFloat("px", j, photon.px());
+                    partBank.putFloat("py", j, photon.py());
+                    partBank.putFloat("pz", j, photon.pz());
+                    j++;
+                }
+
+                outEvent.addStructure(partBank);
+
+                writer.addEvent(outEvent);
+            }
+        }
+    }
+
+    // Close the writer
+    if (mode_write) {
+        writer.close();
+        writer.showSummary();
     }
 }
 
@@ -361,6 +417,48 @@ auto Reader::select_photons(const std::vector<Core::Particle>& photons, const Co
 }
 
 // Stuff for GBTFilter
+auto Reader::select_photons_with_AI(const hipo::bank& RUN_config, const hipo::bank& REC_Particle, const hipo::bank& REC_Calorimeter) const -> std::vector<Core::Particle> {
+    // ---------------------------
+    //     Stuff for GBTFilter
+    // ---------------------------
+    int run_number = RUN_config.getInt("run", 0);
+    std::vector<int> good_photon_rows;
+    // Get CaloMap for the event
+    auto calo_map = GetCaloMap(REC_Calorimeter);
+    for (int i = 0; i < REC_Particle.getRows(); i++) {
+        int pid = REC_Particle.getInt("pid", i);
+        if (pid == 22) {
+            if (Filter(REC_Particle, REC_Calorimeter, calo_map, i, run_number)) {
+                good_photon_rows.push_back(i);
+            }
+        }
+    }
+
+    // Get good photons
+    std::vector<Core::Particle> good_photons;
+    for (const auto& row : good_photon_rows) {
+        int pid = REC_Particle.getInt("pid", row);
+        int status = REC_Particle.getInt("status", row);
+        int charge = REC_Particle.getInt("charge", row);
+
+        double px = REC_Particle.getDouble("px", row);
+        double py = REC_Particle.getDouble("py", row);
+        double pz = REC_Particle.getDouble("pz", row);
+        double vx = REC_Particle.getDouble("vx", row);
+        double vy = REC_Particle.getDouble("vy", row);
+        double vz = REC_Particle.getDouble("vz", row);
+        double vt = REC_Particle.getDouble("vt", row);
+        double beta = REC_Particle.getDouble("beta", row);
+        double chi2pid = REC_Particle.getDouble("chi2pid", row);
+        double E = Core::compute_energy(px, py, pz, pid);
+
+        good_photons.emplace_back(pid, status, row, charge, 0, px, py, pz, E, vx, vy, vz, vt, beta, chi2pid);
+    }
+
+    return good_photons;
+    // End ---------------------------------------
+}
+
 std::map<int, Reader::calo_row_data> Reader::GetCaloMap(hipo::bank const& bank) const {
     std::map<int, Reader::calo_row_data> calo_map;
     // Loop over REC::Calorimeter rows

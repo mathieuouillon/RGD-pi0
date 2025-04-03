@@ -222,7 +222,7 @@ inline auto draw_hist1D(const std::shared_ptr<TH1>& h, const std::string& path, 
         line.DrawLine(cut, 0, cut, 0.8 * h->GetMaximum());
     }
 
-    if (args.opt_stat.data() == "emr") set_stat_boxes(canvas, false, h);
+    //if (args.opt_stat == "emr") set_stat_boxes(canvas, false, h);
     save_canvas(canvas, path, file_name);
 }
 
@@ -271,7 +271,7 @@ inline auto draw_hist1D(const std::shared_ptr<TH1>& h1, const std::shared_ptr<TH
         legend->Draw();
     }
 
-    if (args.opt_stat.data() == "emr") set_stat_boxes(canvas, false, h1, h2);
+    //if (args.opt_stat == "emr") set_stat_boxes(canvas, false, h1, h2);
     save_canvas(canvas, path, file_name);
 }
 

@@ -9,6 +9,9 @@
 // toml headers
 #include <toml++/toml.h>
 
+// <fmt> headers
+#include <fmt/core.h>
+
 // Project headers
 #include <Plotting/Draw.hpp>
 #include <study1/Histograms.hpp>
@@ -32,7 +35,6 @@ class Drawing {
     // ****** private methods
     auto fit_time_photon(const std::shared_ptr<TH1D>& hist1D_time_cut_fit) const -> void;
     auto fit_opening_angle(const std::shared_ptr<TH1D>& hist1D_opening_angle_cut_fit) const -> void;
-    auto draw_photon_info(const PhotonInfo& info, const std::string& path) -> void;
 
    public:
     // ****** constructors and destructor

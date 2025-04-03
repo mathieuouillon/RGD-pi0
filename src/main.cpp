@@ -64,17 +64,17 @@ int main(int argc, char* argv[]) {
     const toml::table config = toml::parse_file("../config/study1.toml");
 
     // Read the files
-    std::vector<std::string> files = Core::read_recursive_file_in_directory("/volatile/clas12/ouillon/skim_pass0v9_RGD/LD2/", 1);
+    std::vector<std::string> files = Core::read_recursive_file_in_directory("/volatile/clas12/ouillon/skim_pass0v9_RGD/LD2/", 10);
     
     // Process the data
     study1::Histograms histograms;
     study1::Reader reader(histograms, config);
-    multithread_reader(reader, files, 1);
+    multithread_reader(reader, files, 20);
 
     // Draw the histograms
     study1::Drawing drawing(histograms, config);
     drawing.draw_electron();
-    // drawing.draw_photon();
+    drawing.draw_photon();
     drawing.draw_event();
 
     auto end_time = std::chrono::high_resolution_clock::now();
