@@ -91,14 +91,347 @@ auto Reader::operator()(const std::string& file) const -> void {
         // Get the photon from another event
         std::vector<Core::Particle> photon_mix_queue;
         int count = 0;
-        while (photon_mix_queue.size() < number_of_events && reader.eventNumber() + number_of_events < reader.getEntries() - number_of_events) {
+        while (photon_mix_queue.size() < number_of_events && reader.eventNumber() < reader.getEntries() - number_of_events) {
+            auto REC_Particle_main = hipo::bank(dict.getSchema("REC::Particle"));
+            auto REC_Calorimeter_main = hipo::bank(dict.getSchema("REC::Calorimeter"));
+
+            REC_Particle_main.setRows(REC_Particle.getRows());
+            REC_Calorimeter_main.setRows(REC_Calorimeter.getRows());
+
+            // Read the next event
+            for (int row = 0; row < REC_Particle.getRows(); row++) {
+                int pid = REC_Particle.getInt("pid", row);
+                short status = REC_Particle.getShort("status", row);
+                short charge = REC_Particle.getByte("charge", row);
+
+                float px = REC_Particle.getFloat("px", row);
+                float py = REC_Particle.getFloat("py", row);
+                float pz = REC_Particle.getFloat("pz", row);
+                float vx = REC_Particle.getFloat("vx", row);
+                float vy = REC_Particle.getFloat("vy", row);
+                float vz = REC_Particle.getFloat("vz", row);
+                float vt = REC_Particle.getFloat("vt", row);
+                float beta = REC_Particle.getFloat("beta", row);
+                float chi2pid = REC_Particle.getFloat("chi2pid", row);
+
+                REC_Particle_main.putInt("pid", row, pid);
+                REC_Particle_main.putShort("status", row, status);
+                REC_Particle_main.putByte("charge", row, charge);
+                REC_Particle_main.putFloat("px", row, px);
+                REC_Particle_main.putFloat("py", row, py);
+                REC_Particle_main.putFloat("pz", row, pz);
+                REC_Particle_main.putFloat("vx", row, vx);
+                REC_Particle_main.putFloat("vy", row, vy);
+                REC_Particle_main.putFloat("vz", row, vz);
+                REC_Particle_main.putFloat("vt", row, vt);
+                REC_Particle_main.putFloat("beta", row, beta);
+                REC_Particle_main.putFloat("chi2pid", row, chi2pid);
+            }
+
+            for (int row = 0; row < REC_Calorimeter.getRows(); row++) {
+                short index = REC_Calorimeter.getShort("index", row);
+                short pindex = REC_Calorimeter.getShort("pindex", row);
+                short detector = REC_Calorimeter.getByte("detector", row);
+                short sector = REC_Calorimeter.getByte("sector", row);
+                short layer = REC_Calorimeter.getByte("layer", row);
+                float energy = REC_Calorimeter.getFloat("energy", row);
+                float time = REC_Calorimeter.getFloat("time", row);
+                float path = REC_Calorimeter.getFloat("path", row);
+                float chi2 = REC_Calorimeter.getFloat("chi2", row);
+                float x = REC_Calorimeter.getFloat("x", row);
+                float y = REC_Calorimeter.getFloat("y", row);
+                float z = REC_Calorimeter.getFloat("z", row);
+                float hx = REC_Calorimeter.getFloat("hx", row);
+                float hy = REC_Calorimeter.getFloat("hy", row);
+                float hz = REC_Calorimeter.getFloat("hz", row);
+                float lu = REC_Calorimeter.getFloat("lu", row);
+                float lv = REC_Calorimeter.getFloat("lv", row);
+                float lw = REC_Calorimeter.getFloat("lw", row);
+                float du = REC_Calorimeter.getFloat("du", row);
+                float dv = REC_Calorimeter.getFloat("dv", row);
+                float dw = REC_Calorimeter.getFloat("dw", row);
+                float m2u = REC_Calorimeter.getFloat("m2u", row);
+                float m2v = REC_Calorimeter.getFloat("m2v", row);
+                float m2w = REC_Calorimeter.getFloat("m2w", row);
+                float m3u = REC_Calorimeter.getFloat("m3u", row);
+                float m3v = REC_Calorimeter.getFloat("m3v", row);
+                float m3w = REC_Calorimeter.getFloat("m3w", row);
+                short status = REC_Calorimeter.getShort("status", row);
+
+                REC_Calorimeter_main.putShort("index", row, index);
+                REC_Calorimeter_main.putShort("pindex", row, pindex);
+                REC_Calorimeter_main.putByte("detector", row, detector);
+                REC_Calorimeter_main.putByte("sector", row, sector);
+                REC_Calorimeter_main.putByte("layer", row, layer);
+                REC_Calorimeter_main.putFloat("energy", row, energy);
+                REC_Calorimeter_main.putFloat("time", row, time);
+                REC_Calorimeter_main.putFloat("path", row, path);
+                REC_Calorimeter_main.putFloat("chi2", row, chi2);
+                REC_Calorimeter_main.putFloat("x", row, x);
+                REC_Calorimeter_main.putFloat("y", row, y);
+                REC_Calorimeter_main.putFloat("z", row, z);
+                REC_Calorimeter_main.putFloat("hx", row, hx);
+                REC_Calorimeter_main.putFloat("hy", row, hy);
+                REC_Calorimeter_main.putFloat("hz", row, hz);
+                REC_Calorimeter_main.putFloat("lu", row, lu);
+                REC_Calorimeter_main.putFloat("lv", row, lv);
+                REC_Calorimeter_main.putFloat("lw", row, lw);
+                REC_Calorimeter_main.putFloat("du", row, du);
+                REC_Calorimeter_main.putFloat("dv", row, dv);
+                REC_Calorimeter_main.putFloat("dw", row, dw);
+                REC_Calorimeter_main.putFloat("m2u", row, m2u);
+                REC_Calorimeter_main.putFloat("m2v", row, m2v);
+                REC_Calorimeter_main.putFloat("m2w", row, m2w);
+                REC_Calorimeter_main.putFloat("m3u", row, m3u);
+                REC_Calorimeter_main.putFloat("m3v", row, m3v);
+                REC_Calorimeter_main.putFloat("m3w", row, m3w);
+                REC_Calorimeter_main.putShort("status", row, status);
+            }
+
+            // fmt::println("----------------------------------------------------------------------");
+            // fmt::println("----------------------------------------------------------------------");
+            // REC_Calorimeter.show();
             reader.next(hipo_event, REC_Event, RUN_config, REC_Particle, REC_Calorimeter, REC_Cherenkov);
             Topology topology_mix = get_topology(REC_Particle);
 
-            std::vector<Core::Particle> good_photons_mix = select_photons_with_AI(RUN_config, REC_Particle, REC_Calorimeter);
-            if (good_photons_mix.size() < 2) continue;
+            // Get all photons
+            std::vector<int> all_photons_rows;
+            for (int i = 0; i < REC_Particle.getRows(); i++) {
+                int pid = REC_Particle.getInt("pid", i);
+                if (pid == 22) {
+                    all_photons_rows.push_back(i);
+                }
+            }
 
-            for (Core::Particle& photon : good_photons_mix) {
+            int nb_rows_calo = 0;
+            for (int i = 0; i < REC_Calorimeter.getRows(); i++) {
+                for (const auto row : all_photons_rows) {
+                    if (row == REC_Calorimeter.getInt("pindex", i)) {
+                        nb_rows_calo++;
+                    }
+                }
+            }
+
+            // fmt::println("----------------------------------------------------------------------");
+
+            auto REC_Particle_main2 = hipo::bank(dict.getSchema("REC::Particle"));
+            auto REC_Calorimeter_main2 = hipo::bank(dict.getSchema("REC::Calorimeter"));
+
+            REC_Particle_main2.setRows(REC_Particle_main.getRows() + all_photons_rows.size());
+            REC_Calorimeter_main2.setRows(REC_Calorimeter_main.getRows() + nb_rows_calo);
+
+            for (int row = 0; row < REC_Particle_main.getRows(); row++) {
+                int pid = REC_Particle_main.getInt("pid", row);
+                short status = REC_Particle_main.getShort("status", row);
+                short charge = REC_Particle_main.getByte("charge", row);
+
+                float px = REC_Particle_main.getFloat("px", row);
+                float py = REC_Particle_main.getFloat("py", row);
+                float pz = REC_Particle_main.getFloat("pz", row);
+                float vx = REC_Particle_main.getFloat("vx", row);
+                float vy = REC_Particle_main.getFloat("vy", row);
+                float vz = REC_Particle_main.getFloat("vz", row);
+                float vt = REC_Particle_main.getFloat("vt", row);
+                float beta = REC_Particle_main.getFloat("beta", row);
+                float chi2pid = REC_Particle_main.getFloat("chi2pid", row);
+
+                REC_Particle_main2.putInt("pid", row, pid);
+                REC_Particle_main2.putShort("status", row, status);
+                REC_Particle_main2.putByte("charge", row, charge);
+                REC_Particle_main2.putFloat("px", row, px);
+                REC_Particle_main2.putFloat("py", row, py);
+                REC_Particle_main2.putFloat("pz", row, pz);
+                REC_Particle_main2.putFloat("vx", row, vx);
+                REC_Particle_main2.putFloat("vy", row, vy);
+                REC_Particle_main2.putFloat("vz", row, vz);
+                REC_Particle_main2.putFloat("vt", row, vt);
+                REC_Particle_main2.putFloat("beta", row, beta);
+                REC_Particle_main2.putFloat("chi2pid", row, chi2pid);
+            }
+
+            for (int row = 0; row < REC_Calorimeter_main.getRows(); row++) {
+                short index = REC_Calorimeter_main.getShort("index", row);
+                short pindex = REC_Calorimeter_main.getShort("pindex", row);
+                short detector = REC_Calorimeter_main.getByte("detector", row);
+                short sector = REC_Calorimeter_main.getByte("sector", row);
+                short layer = REC_Calorimeter_main.getByte("layer", row);
+                float energy = REC_Calorimeter_main.getFloat("energy", row);
+                float time = REC_Calorimeter_main.getFloat("time", row);
+                float path = REC_Calorimeter_main.getFloat("path", row);
+                float chi2 = REC_Calorimeter_main.getFloat("chi2", row);
+                float x = REC_Calorimeter_main.getFloat("x", row);
+                float y = REC_Calorimeter_main.getFloat("y", row);
+                float z = REC_Calorimeter_main.getFloat("z", row);
+                float hx = REC_Calorimeter_main.getFloat("hx", row);
+                float hy = REC_Calorimeter_main.getFloat("hy", row);
+                float hz = REC_Calorimeter_main.getFloat("hz", row);
+                float lu = REC_Calorimeter_main.getFloat("lu", row);
+                float lv = REC_Calorimeter_main.getFloat("lv", row);
+                float lw = REC_Calorimeter_main.getFloat("lw", row);
+                float du = REC_Calorimeter_main.getFloat("du", row);
+                float dv = REC_Calorimeter_main.getFloat("dv", row);
+                float dw = REC_Calorimeter_main.getFloat("dw", row);
+                float m2u = REC_Calorimeter_main.getFloat("m2u", row);
+                float m2v = REC_Calorimeter_main.getFloat("m2v", row);
+                float m2w = REC_Calorimeter_main.getFloat("m2w", row);
+                float m3u = REC_Calorimeter_main.getFloat("m3u", row);
+                float m3v = REC_Calorimeter_main.getFloat("m3v", row);
+                float m3w = REC_Calorimeter_main.getFloat("m3w", row);
+                short status = REC_Calorimeter_main.getShort("status", row);
+
+                REC_Calorimeter_main2.putShort("index", row, index);
+                REC_Calorimeter_main2.putShort("pindex", row, pindex);
+                REC_Calorimeter_main2.putByte("detector", row, detector);
+                REC_Calorimeter_main2.putByte("sector", row, sector);
+                REC_Calorimeter_main2.putByte("layer", row, layer);
+                REC_Calorimeter_main2.putFloat("energy", row, energy);
+                REC_Calorimeter_main2.putFloat("time", row, time);
+                REC_Calorimeter_main2.putFloat("path", row, path);
+                REC_Calorimeter_main2.putFloat("chi2", row, chi2);
+                REC_Calorimeter_main2.putFloat("x", row, x);
+                REC_Calorimeter_main2.putFloat("y", row, y);
+                REC_Calorimeter_main2.putFloat("z", row, z);
+                REC_Calorimeter_main2.putFloat("hx", row, hx);
+                REC_Calorimeter_main2.putFloat("hy", row, hy);
+                REC_Calorimeter_main2.putFloat("hz", row, hz);
+                REC_Calorimeter_main2.putFloat("lu", row, lu);
+                REC_Calorimeter_main2.putFloat("lv", row, lv);
+                REC_Calorimeter_main2.putFloat("lw", row, lw);
+                REC_Calorimeter_main2.putFloat("du", row, du);
+                REC_Calorimeter_main2.putFloat("dv", row, dv);
+                REC_Calorimeter_main2.putFloat("dw", row, dw);
+                REC_Calorimeter_main2.putFloat("m2u", row, m2u);
+                REC_Calorimeter_main2.putFloat("m2v", row, m2v);
+                REC_Calorimeter_main2.putFloat("m2w", row, m2w);
+                REC_Calorimeter_main2.putFloat("m3u", row, m3u);
+                REC_Calorimeter_main2.putFloat("m3v", row, m3v);
+                REC_Calorimeter_main2.putFloat("m3w", row, m3w);
+                REC_Calorimeter_main2.putShort("status", row, status);
+            }
+
+            // REC_Particle.show();
+            // REC_Calorimeter.show();
+            // REC_Calorimeter_main2.show();
+            int ii = REC_Particle_main.getRows();
+            int iii = REC_Calorimeter_main.getRows();
+            for (const auto row : all_photons_rows) {
+                // fmt::println("ii: {}", ii);
+                int pid = REC_Particle.getInt("pid", row);
+                short status = REC_Particle.getShort("status", row);
+                short charge = REC_Particle.getByte("charge", row);
+
+                float px = REC_Particle.getFloat("px", row);
+                float py = REC_Particle.getFloat("py", row);
+                float pz = REC_Particle.getFloat("pz", row);
+                float vx = REC_Particle.getFloat("vx", row);
+                float vy = REC_Particle.getFloat("vy", row);
+                float vz = REC_Particle.getFloat("vz", row);
+                float vt = REC_Particle.getFloat("vt", row);
+                float beta = REC_Particle.getFloat("beta", row);
+                float chi2pid = REC_Particle.getFloat("chi2pid", row);
+
+                REC_Particle_main2.putInt("pid", ii, pid);
+                REC_Particle_main2.putShort("status", ii, status);
+                REC_Particle_main2.putByte("charge", ii, charge);
+                REC_Particle_main2.putFloat("px", ii, px);
+                REC_Particle_main2.putFloat("py", ii, py);
+                REC_Particle_main2.putFloat("pz", ii, pz);
+                REC_Particle_main2.putFloat("vx", ii, vx);
+                REC_Particle_main2.putFloat("vy", ii, vy);
+                REC_Particle_main2.putFloat("vz", ii, vz);
+                REC_Particle_main2.putFloat("vt", ii, vt);
+                REC_Particle_main2.putFloat("beta", ii, beta);
+                REC_Particle_main2.putFloat("chi2pid", ii, chi2pid);
+                ii++;
+            }
+            
+
+            for (int i = 0; i < REC_Calorimeter.getRows(); i++) {
+                for (const auto row : all_photons_rows) {
+                    if (row == REC_Calorimeter.getInt("pindex", i)) {
+                        short index = REC_Calorimeter.getShort("index", i);
+                        short pindex = REC_Calorimeter.getShort("pindex", i);
+                        short detector = REC_Calorimeter.getByte("detector", i);
+                        short sector = REC_Calorimeter.getByte("sector", i);
+                        short layer = REC_Calorimeter.getByte("layer", i);
+                        float energy = REC_Calorimeter.getFloat("energy", i);
+                        float time = REC_Calorimeter.getFloat("time", i);
+                        float path = REC_Calorimeter.getFloat("path", i);
+                        float chi2 = REC_Calorimeter.getFloat("chi2", i);
+                        float x = REC_Calorimeter.getFloat("x", i);
+                        float y = REC_Calorimeter.getFloat("y", i);
+                        float z = REC_Calorimeter.getFloat("z", i);
+                        float hx = REC_Calorimeter.getFloat("hx", i);
+                        float hy = REC_Calorimeter.getFloat("hy", i);
+                        float hz = REC_Calorimeter.getFloat("hz", i);
+                        float lu = REC_Calorimeter.getFloat("lu", i);
+                        float lv = REC_Calorimeter.getFloat("lv", i);
+                        float lw = REC_Calorimeter.getFloat("lw", i);
+                        float du = REC_Calorimeter.getFloat("du", i);
+                        float dv = REC_Calorimeter.getFloat("dv", i);
+                        float dw = REC_Calorimeter.getFloat("dw", i);
+                        float m2u = REC_Calorimeter.getFloat("m2u", i);
+                        float m2v = REC_Calorimeter.getFloat("m2v", i);
+                        float m2w = REC_Calorimeter.getFloat("m2w", i);
+                        float m3u = REC_Calorimeter.getFloat("m3u", i);
+                        float m3v = REC_Calorimeter.getFloat("m3v", i);
+                        float m3w = REC_Calorimeter.getFloat("m3w", i);
+                        short status = REC_Calorimeter.getShort("status", i);
+        
+                        REC_Calorimeter_main2.putShort("index", iii, index);
+                        REC_Calorimeter_main2.putShort("pindex", iii, pindex);
+                        REC_Calorimeter_main2.putByte("detector", iii, detector);
+                        REC_Calorimeter_main2.putByte("sector", iii, sector);
+                        REC_Calorimeter_main2.putByte("layer", iii, layer);
+                        REC_Calorimeter_main2.putFloat("energy", iii, energy);
+                        REC_Calorimeter_main2.putFloat("time", iii, time);
+                        REC_Calorimeter_main2.putFloat("path", iii, path);
+                        REC_Calorimeter_main2.putFloat("chi2", iii, chi2);
+                        REC_Calorimeter_main2.putFloat("x", iii, x);
+                        REC_Calorimeter_main2.putFloat("y", iii, y);
+                        REC_Calorimeter_main2.putFloat("z", iii, z);
+                        REC_Calorimeter_main2.putFloat("hx", iii, hx);
+                        REC_Calorimeter_main2.putFloat("hy", iii, hy);
+                        REC_Calorimeter_main2.putFloat("hz", iii, hz);
+                        REC_Calorimeter_main2.putFloat("lu", iii, lu);
+                        REC_Calorimeter_main2.putFloat("lv", iii, lv);
+                        REC_Calorimeter_main2.putFloat("lw", iii, lw);
+                        REC_Calorimeter_main2.putFloat("du", iii, du);
+                        REC_Calorimeter_main2.putFloat("dv", iii, dv);
+                        REC_Calorimeter_main2.putFloat("dw", iii, dw);
+                        REC_Calorimeter_main2.putFloat("m2u", iii, m2u);
+                        REC_Calorimeter_main2.putFloat("m2v", iii, m2v);
+                        REC_Calorimeter_main2.putFloat("m2w", iii, m2w);
+                        REC_Calorimeter_main2.putFloat("m3u", iii, m3u);
+                        REC_Calorimeter_main2.putFloat("m3v", iii, m3v);
+                        REC_Calorimeter_main2.putFloat("m3w", iii, m3w);
+                        REC_Calorimeter_main2.putShort("status", iii, status);
+
+
+
+                    }
+                }
+            }
+            
+            // REC_Calorimeter_main2.show();
+            
+            
+            std::vector<Core::Particle> good_photons_mix = select_photons_with_AI(RUN_config, REC_Particle_main2, REC_Calorimeter_main2);
+            
+            // Check if the photons are not for the main event
+            std::vector<Core::Particle> good_photons_mix_2;
+            for (const auto& photon : good_photons_mix) {
+                for (const auto& photon2 : good_photons) {
+                    if (photon.index() == photon2.index()) {
+                        good_photons_mix_2.push_back(photon);
+                    }
+                }
+            }
+            
+            
+            if (good_photons_mix_2.size() < 2) continue;
+
+            for (Core::Particle& photon : good_photons_mix_2) {
                 photon_mix_queue.push_back(photon);
             }
             count++;
@@ -136,9 +469,9 @@ auto Reader::operator()(const std::string& file) const -> void {
             double m = ROOT::Math::VectorUtil::InvariantMass(photon1.PxPyPzEVector(), photon2.PxPyPzEVector());
 
             Core::CalorimeterBank calo_info_1 = Core::read_Calorimeter_bank(REC_Calorimeter, photon1.index());
-            int sector_1 = calo_info_1.pcal.sector;  
+            int sector_1 = calo_info_1.pcal.sector;
             Core::CalorimeterBank calo_info_2 = Core::read_Calorimeter_bank(REC_Calorimeter, photon2.index());
-            int sector_2 = calo_info_2.pcal.sector;  
+            int sector_2 = calo_info_2.pcal.sector;
 
             m_histograms.event.hist1D_W->Get()->Fill(W);
             m_histograms.event.hist1D_Q2->Get()->Fill(Q2);
@@ -162,6 +495,7 @@ auto Reader::operator()(const std::string& file) const -> void {
             if (cuts) {
                 m_histograms.event.hist1D_nu_cut->Get()->Fill(nu);
                 m_histograms.event.hist1D_invariant_mass_cut->Get()->Fill(m);
+                m_histograms.event.hist2D_angle_vs_invariant_mass->Get()->Fill(ROOT::Math::VectorUtil::Angle(photon1.PxPyPzEVector(), photon2.PxPyPzEVector()) * 180. / TMath::Pi(), m);
 
                 set_photons_pass_event_cuts.insert(photon1);
                 set_photons_pass_event_cuts.insert(photon2);
@@ -202,9 +536,9 @@ auto Reader::operator()(const std::string& file) const -> void {
             double m = ROOT::Math::VectorUtil::InvariantMass(photon1.PxPyPzEVector(), photon2.PxPyPzEVector());
 
             Core::CalorimeterBank calo_info_1 = Core::read_Calorimeter_bank(REC_Calorimeter, photon1.index());
-            int sector_1 = calo_info_1.pcal.sector;  
+            int sector_1 = calo_info_1.pcal.sector;
             Core::CalorimeterBank calo_info_2 = Core::read_Calorimeter_bank(REC_Calorimeter, photon2.index());
-            int sector_2 = calo_info_2.pcal.sector; 
+            int sector_2 = calo_info_2.pcal.sector;
 
             m_histograms.event_mix.hist1D_W->Get()->Fill(W);
             m_histograms.event_mix.hist1D_Q2->Get()->Fill(Q2);
@@ -220,6 +554,8 @@ auto Reader::operator()(const std::string& file) const -> void {
             const bool cut_sector = sector_1 != sector_2;
             const bool cuts = cut_Q2 && cut_W && cut_zh && cut_y;
 
+            // if (ROOT::Math::VectorUtil::Angle(photon1.PxPyPzEVector(), photon2.PxPyPzEVector()) * 180. / TMath::Pi() < 4) continue;
+
             if (cut_Q2 && cut_W && cut_y) m_histograms.event_mix.hist1D_zh_cut->Get()->Fill(zh);
             if (cut_Q2 && cut_zh && cut_y) m_histograms.event_mix.hist1D_W_cut->Get()->Fill(W);
             if (cut_W && cut_zh && cut_y) m_histograms.event_mix.hist1D_Q2_cut->Get()->Fill(Q2);
@@ -228,6 +564,8 @@ auto Reader::operator()(const std::string& file) const -> void {
             if (cuts) {
                 m_histograms.event_mix.hist1D_nu_cut->Get()->Fill(nu);
                 m_histograms.event_mix.hist1D_invariant_mass_cut->Get()->Fill(m);
+
+                m_histograms.event_mix.hist2D_angle_vs_invariant_mass->Get()->Fill(ROOT::Math::VectorUtil::Angle(photon1.PxPyPzEVector(), photon2.PxPyPzEVector()) * 180. / TMath::Pi(), m);
 
                 set_photons_pass_event_cuts.insert(photon1);
                 set_photons_pass_event_cuts.insert(photon2);

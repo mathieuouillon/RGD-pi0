@@ -159,12 +159,19 @@ auto Drawing::draw_event() -> void {
     
     
     
-    double sidebandData = hist1D_invariant_mass_cut->Integral(hist1D_invariant_mass_cut->FindBin(0.19), hist1D_invariant_mass_cut->FindBin(0.3));
-    double sidebandMixed = hist1D_invariant_mass_mix_cut->Integral(hist1D_invariant_mass_mix_cut->FindBin(0.19), hist1D_invariant_mass_mix_cut->FindBin(0.3));
+    double sidebandData = hist1D_invariant_mass_cut->Integral(hist1D_invariant_mass_cut->FindBin(0.19), hist1D_invariant_mass_cut->FindBin(0.5));
+    double sidebandMixed = hist1D_invariant_mass_mix_cut->Integral(hist1D_invariant_mass_mix_cut->FindBin(0.19), hist1D_invariant_mass_mix_cut->FindBin(0.5));
     double scaleFactor = sidebandData / sidebandMixed;
     fmt::println("scale: {}", scaleFactor);
     
     Plotting::draw_hist1D(hist1D_invariant_mass_cut, hist1D_invariant_mass_mix_cut, m_path_event, {.file_name = "invariant_mass_mix", .scale2 = scaleFactor, .label = "Invariant mass [GeV]"});
+
+    const std::shared_ptr<TH2D> hist2D_angle_vs_invariant_mass = m_histograms.event.hist2D_angle_vs_invariant_mass->Merge();
+    const std::shared_ptr<TH2D> hist2D_angle_vs_invariant_mass_mix = m_histograms.event_mix.hist2D_angle_vs_invariant_mass->Merge();
+
+    Plotting::draw_hist2D(hist2D_angle_vs_invariant_mass, m_path_event, {.label_x = "#theta_{#gamma_{1} #gamma_{2}} [deg.]", .label_y = "Invariant mass [GeV]"});
+    Plotting::draw_hist2D(hist2D_angle_vs_invariant_mass_mix, m_path_event, {.file_name="angle_vs_invariant_mass_mix",.label_x = "#theta_{#gamma_{1} #gamma_{2}} [deg.]", .label_y = "Invariant mass [GeV]"});
+
 }
 
 }  // namespace study1

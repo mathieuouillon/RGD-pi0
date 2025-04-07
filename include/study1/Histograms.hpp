@@ -68,6 +68,9 @@ struct Event {
     up_TTO_TH1D hist1D_y_cut = std::make_unique<TTO_TH1D>("y_cut", "", 200, 0, 2);
     up_TTO_TH1D hist1D_zh_cut = std::make_unique<TTO_TH1D>("zh_cut", "", 200, 0, 2);
 
+    up_TTO_TH2D hist2D_angle_vs_invariant_mass = std::make_unique<TTO_TH2D>("angle_vs_invariant_mass", "", 200, 0, 70, 200, 0, 0.5);
+
+
 };
 
 struct Histograms {

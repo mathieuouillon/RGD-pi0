@@ -14,6 +14,6 @@ opening_angle_min = 8
 [event]
 Q2_min = 1
 W_min = 2
-zh_min = 0.3
-zh_max = 0.7
+zh_min = 0
+zh_max = 1
 y_max = 0.85

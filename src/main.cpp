@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     const toml::table config = toml::parse_file("../config/study1.toml");
 
     // Read the files
-    std::vector<std::string> files = Core::read_recursive_file_in_directory("/volatile/clas12/ouillon/skim_pass0v9_RGD/LD2/", 10);
+    std::vector<std::string> files = Core::read_recursive_file_in_directory("/volatile/clas12/ouillon/skim_pass0v10_RGD/LD2/", 20);
     
     // Process the data
     study1::Histograms histograms;
