@@ -39,3 +39,5 @@ builddir/
 bin/
 plots/
 data/
+
+.DS_Store
