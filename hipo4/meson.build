@@ -24,7 +24,6 @@ hipo_sources = files(
   'recordbuilder.cpp',
   'utils.cpp',
   'writer.cpp',
-  'hipoeventiterator.cpp',
 )
 
 hipo_lib = library(

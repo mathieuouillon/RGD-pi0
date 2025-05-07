@@ -27,20 +27,30 @@
 #include <study1/Drawing.hpp>
 #include <thread_pool/multi_thread.hpp>
 
-int main(int argc, char* argv[]) {
+int main() {
     ROOT::EnableThreadSafety();  // To stop random errors in multithread mode
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // Read the configuration file
     const toml::table config = toml::parse_file("../config/study1.toml");
+    const toml::table sf_cfg = toml::parse_file("../config/sf_vs_p_OBLD2.toml");
 
     // Read the files
-    std::vector<std::string> files = Core::read_recursive_file_in_directory("../data/");
+    std::vector<std::string> files_CuSn = Core::read_recursive_file_in_directory("/cache/hallb/scratch/rg-d/production/skim_pass0v10/CuSn");
+    std::vector<std::string> files_CxC = Core::read_recursive_file_in_directory("/cache/hallb/scratch/rg-d/production/skim_pass0v10/CxC");
+    std::vector<std::string> files_LD2 = Core::read_recursive_file_in_directory("/cache/hallb/scratch/rg-d/production/skim_pass0v10/LD2");
+    std::vector<std::string> files_Short = Core::read_recursive_file_in_directory("/cache/hallb/scratch/rg-d/production/skim_pass0v10/ShortEmpRand");
+
+    files_LD2.insert(files_LD2.end(), files_Short.begin(), files_Short.end());
+    std::vector<std::string> files = Core::select_runs(files_LD2, outbending_runs_LD2);
+    files.resize(static_cast<int>(20.f / 100 * files.size()));
+    fmt::print("Number of files: {}\n", files.size());
+    // fmt::println("Files: {}", fmt::join(files, "\n"));
     
     // Process the data
     study1::Histograms histograms;
-    study1::Reader reader(histograms, config);
+    study1::Reader reader(histograms, config, {11, 22}, sf_cfg);
     multithread_reader(reader, files, 1);
 
     // Draw the histograms

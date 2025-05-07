@@ -3,6 +3,10 @@
 // C++ headers
 #include <limits>
 
+// <fmt> headers
+#include <fmt/core.h>
+#include <fmt/ranges.h>
+
 // toml headers
 #include <toml++/toml.h>
 
